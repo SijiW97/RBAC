@@ -54,7 +54,6 @@ router.get('/', authenticate, hasPermission('projects:read'), async (req, res) =
       totalPages: Math.ceil(total / limit)
     });
   } catch (error) {
-    console.error('Get projects error:', error);
     res.status(500).json({ message: 'Error fetching projects' });
   }
 });

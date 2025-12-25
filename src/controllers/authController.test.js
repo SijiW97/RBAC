@@ -363,6 +363,54 @@ describe('AuthController - login', () => {
             expect(tokenPayload.userId).toBe('507f1f77bcf86cd799439011');
         });
 
+        test('should call next(err) when jwt.sign throws error', async () => {
+            process.env.JWT_SECRET = 'test_secret';
+
+            const jwtError = new Error('JWT failure');
+
+            validationResult.mockReturnValue({
+                isEmpty: () => true
+            });
+
+            User.findOne.mockReturnValue({
+                populate: jest.fn().mockResolvedValue({
+                    _id: '123',
+                    email: 'test@test.com',
+                    name: 'Test',
+                    roles: [
+                        {
+                            name: 'USER',
+                            permissions: [
+                                { name: 'READ' }
+                            ]
+                        }
+                    ],
+                    comparePassword: jest.fn().mockResolvedValue(true),
+
+                })
+            });
+
+            jwt.sign.mockImplementation(() => {
+                throw jwtError;
+            });
+
+            const req = {
+                body: { email: 'test@test.com', password: 'password' }
+            };
+
+            const res = {
+                json: jest.fn()
+            };
+
+            const next = jest.fn();
+
+            await login(req, res, next);
+
+            expect(next).toHaveBeenCalledTimes(1);
+            expect(next).toHaveBeenCalledWith(jwtError);
+        });
+
+
     });
 
     describe('Response Format', () => {
@@ -432,4 +480,6 @@ describe('AuthController - login', () => {
             expect(response.user).not.toHaveProperty('password');
         });
     });
+
+
 });
