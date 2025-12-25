@@ -1,8 +1,6 @@
 const request = require('supertest');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
-
-// Set environment variables for testing
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.NODE_ENV = 'test';
 
@@ -10,6 +8,9 @@ process.env.NODE_ENV = 'test';
 let User, Role, Permission, Project;
 
 const app = require('../src/app');
+const { hasAllPermissions, hasRole, hasPermission } = require('../src/middleware/rbac');
+const { errorHandler } = require('../src/middleware/error');
+const authenticate = require('../src/middleware/auth');
 
 let mongoServer;
 let adminToken, managerToken, viewerToken;
@@ -424,4 +425,250 @@ describe('HTTP Status Code Tests', () => {
     const res = await request(app).get('/projects');
     expect(res.status).toBe(401);
   });
+  test('returns 401 if token has no userId or sub', async () => {
+  process.env.JWT_SECRET = 'test';
+const mockRes = () => {
+  const res = {};
+  res.status = jest.fn().mockReturnValue(res);
+  res.json = jest.fn();
+  return res;
+};
+
+  const req = {
+    headers: { authorization: 'Bearer validtoken' }
+  };
+  const res = mockRes();
+  const mockNext = jest.fn();
+  await authenticate(req, res, mockNext);
+
+  expect(res.status).toHaveBeenCalledWith(401);
+  expect(res.json).toHaveBeenCalledWith({ message: 'Invalid token' });
+});
+
+
+describe('hasPermission', () => {
+const mockRes = () => {
+  const res = {};
+  res.status = jest.fn().mockReturnValue(res);
+  res.json = jest.fn();
+  return res;
+};
+    test('returns 401 if user is not authenticated', () => {
+      const req = {};
+      const res = mockRes();
+      const next = jest.fn();
+
+      hasPermission('READ_USER')(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Authentication required' });
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('calls next if user has required permission', () => {
+      const req = {
+        user: {
+          roles: [
+            {
+              permissions: [{ name: 'READ_USER' }]
+            }
+          ]
+        }
+      };
+      const res = mockRes();
+      const next = jest.fn();
+
+      hasPermission('READ_USER')(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('returns 403 if user lacks required permission', () => {
+      const req = {
+        user: {
+          roles: [
+            {
+              permissions: [{ name: 'WRITE_USER' }]
+            }
+          ]
+        }
+      };
+      const res = mockRes();
+      const next = jest.fn();
+
+      hasPermission('READ_USER')(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Forbidden: Insufficient permissions',
+        required: 'READ_USER'
+      });
+      expect(next).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('hasRole', () => {
+ const mockRes = () => {
+  const res = {};
+  res.status = jest.fn().mockReturnValue(res);
+  res.json = jest.fn();
+  return res;
+};
+    test('returns 401 if user is not authenticated', () => {
+      const req = {};
+      const res = mockRes();
+      const next = jest.fn();
+
+      hasRole('ADMIN')(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Authentication required' });
+    });
+
+    test('calls next if user has required role', () => {
+      const req = {
+        user: {
+          roles: [{ name: 'ADMIN' }]
+        }
+      };
+      const res = mockRes();
+      const next = jest.fn();
+
+      hasRole('ADMIN', 'SUPER_ADMIN')(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('returns 403 if user lacks role', () => {
+      const req = {
+        user: {
+          roles: [{ name: 'USER' }]
+        }
+      };
+      const res = mockRes();
+      const next = jest.fn();
+
+      hasRole('ADMIN')(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Forbidden: Insufficient role',
+        required: ['ADMIN'],
+        current: ['USER']
+      });
+    });
+  });
+
+  describe('hasAllPermissions', () => {
+const mockRes = () => {
+  const res = {};
+  res.status = jest.fn().mockReturnValue(res);
+  res.json = jest.fn();
+  return res;
+};
+    test('returns 401 if user is not authenticated', () => {
+      const req = {};
+      const res = mockRes();
+      const next = jest.fn();
+
+      hasAllPermissions('READ', 'WRITE')(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Authentication required' });
+    });
+
+    test('calls next if user has all permissions', () => {
+      const req = {
+        user: {
+          roles: [
+            {
+              permissions: [{ name: 'READ' }, { name: 'WRITE' }]
+            }
+          ]
+        }
+      };
+      const res = mockRes();
+      const next = jest.fn();
+
+      hasAllPermissions('READ', 'WRITE')(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('returns 403 if user lacks one or more permissions', () => {
+      const req = {
+        user: {
+          roles: [
+            {
+              permissions: [{ name: 'READ' }]
+            }
+          ]
+        }
+      };
+      const res = mockRes();
+      const next = jest.fn();
+
+      hasAllPermissions('READ', 'WRITE')(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Forbidden: Insufficient permissions',
+        required: ['READ', 'WRITE'],
+        current: ['READ']
+      });
+    });
+  });
+
+
+describe('errorHandler middleware', () => {
+
+const mockRes = () => {
+  const res = {};
+  res.status = jest.fn().mockReturnValue(res);
+  res.json = jest.fn();
+  return res;
+};
+
+  afterEach(() => {
+    delete process.env.NODE_ENV;
+  });
+
+  test('returns provided error status and message', () => {
+    process.env.NODE_ENV = 'production';
+
+    const err = {
+      status: 400,
+      message: 'Bad Request'
+    };
+
+    const req = {};
+    const res = mockRes();
+    const next = jest.fn();
+
+    errorHandler(err, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Bad Request'
+    });
+  });
+
+  test('returns 500 and includes stack trace in development', () => {
+    process.env.NODE_ENV = 'development';
+
+    const err = new Error('Something broke');
+
+    const req = {};
+    const res = mockRes();
+    const next = jest.fn();
+
+    errorHandler(err, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+
+    const response = res.json.mock.calls[0][0];
+    expect(response.message).toBe('Something broke');
+    expect(response.stack).toBeDefined(); // dev-only behavior
+  });
+});
 });
