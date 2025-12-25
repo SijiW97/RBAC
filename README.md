@@ -57,7 +57,7 @@ A secure Node.js REST API implementing JWT-based authentication and role-based a
 
 1. **Clone the repository**
 ```bash
-git clone <repository-url>
+git clone
 cd rbac-api
 ```
 
@@ -153,7 +153,6 @@ npm start
 
 The API will be available at `http://localhost:3000`
 
-### Option 3: Docker with Custom Configuration
 
 ### Seeded User Credentials
 
