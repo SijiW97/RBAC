@@ -168,50 +168,27 @@ router.post(
  *       404:
  *         description: Project not found
  */
-router.put('/:id',
+router.put(
+  '/:id',
+  apiLimiter,
   authenticate,
   hasPermission('projects:write'),
   [
-    body('name').optional().notEmpty().trim(),
-    body('description').optional().notEmpty().trim(),
-    body('status').optional().isIn(['active', 'completed', 'on-hold', 'cancelled'])
+    body('name')
+      .optional()
+      .notEmpty().withMessage('Name cannot be empty')
+      .trim()
+      .isLength({ min: 3, max: 100 }),
+    body('description')
+      .optional()
+      .notEmpty().withMessage('Description cannot be empty')
+      .trim()
+      .isLength({ max: 1000 }),
+    body('status')
+      .optional()
+      .isIn(['active', 'completed', 'on-hold', 'cancelled'])
   ],
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-
-      const { name, description, status } = req.body;
-      const updateData = {};
-      
-      if (name) updateData.name = name;
-      if (description) updateData.description = description;
-      if (status) updateData.status = status;
-
-      const project = await Project.findByIdAndUpdate(
-        req.params.id,
-        updateData,
-        { new: true, runValidators: true }
-      ).populate('createdBy', 'name email');
-
-      if (!project) {
-        return res.status(404).json({ message: 'Project not found' });
-      }
-
-      res.json({
-        message: 'Project updated successfully',
-        project
-      });
-    } catch (error) {
-      console.error('Update project error:', error);
-      if (error.name === 'CastError') {
-        return res.status(404).json({ message: 'Project not found' });
-      }
-      res.status(500).json({ message: 'Error updating project' });
-    }
-  }
+  projectController.updateProject
 );
 
 /**
@@ -234,25 +211,12 @@ router.put('/:id',
  *       404:
  *         description: Project not found
  */
-router.delete('/:id', apiLimiter,authenticate, hasPermission('projects:delete'), async (req, res) => {
-  try {
-    const project = await Project.findByIdAndDelete(req.params.id);
-
-    if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    res.json({ 
-      message: 'Project deleted successfully',
-      project
-    });
-  } catch (error) {
-    console.error('Delete project error:', error);
-    if (error.name === 'CastError') {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-    res.status(500).json({ message: 'Error deleting project' });
-  }
-});
+router.delete(
+  '/:id',
+  apiLimiter,
+  authenticate,
+  hasPermission('projects:delete'),
+  projectController.deleteProject
+);
 
 module.exports = router;

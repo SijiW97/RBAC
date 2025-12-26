@@ -84,12 +84,6 @@ const seedDatabase = async () => {
         roles: [viewerRole._id]
       }
     ]);
-
-    console.log('Users created');
-    console.log('Database seeding completed successfully!');
-    console.log('Admin: admin@example.com / admin123');
-    console.log('Manager: manager@example.com / manager123');
-    console.log('Viewer: viewer@example.com / viewer123');
   } catch (error) {
     console.error('Error seeding database:', error);
     throw error;

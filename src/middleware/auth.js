@@ -10,7 +10,7 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ message: 'No token provided' });
     }
 
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const token = authHeader.substring(7);
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -32,8 +32,6 @@ const authenticate = async (req, res, next) => {
         }
       })
       .select('-password');
-
-    console.log('User lookup result:', user ? `Found: ${user.email}` : 'Not found');
 
     if (!user || !user.isActive) {
       return res.status(401).json({ message: 'Invalid token or user not found' });

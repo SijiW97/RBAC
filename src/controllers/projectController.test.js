@@ -1,11 +1,9 @@
 const Project = require('../models/Project');
-const { getAllProjects, createProject } = require('./projectController');
-
-const { validationResult } = require('express-validator');
+const { getAllProjects, createProject, updateProject } = require('./projectController');
 jest.mock('express-validator', () => ({
   validationResult: jest.fn()
 }));
-
+const { validationResult } = require('express-validator');
 jest.mock('../models/Project', () => {
   return {
     find: jest.fn(),
@@ -95,3 +93,25 @@ it('should call next on error', async () => {
   await createProject(req, res, mockNext);
   expect(mockNext).toHaveBeenCalled();
 });
+
+it('should return 400 if validation fails', async () => {
+  validationResult.mockReturnValue({
+    isEmpty: () => false,
+    array: () => [{ msg: 'Invalid input' }]
+  });
+
+  const req = {
+    params: { id: '123' },
+    body: {}
+  };
+  const res = mockRes();
+
+  await updateProject(req, res, mockNext);
+
+  expect(res.status).toHaveBeenCalledWith(400);
+  expect(res.json).toHaveBeenCalledWith({
+    errors: [{ msg: 'Invalid input' }]
+  });
+});
+
+

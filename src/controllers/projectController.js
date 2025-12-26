@@ -61,3 +61,68 @@ exports.createProject = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Update project
+ */
+exports.updateProject = async (req, res, next) => {
+  try {
+    // Validate input
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, description, status } = req.body;
+    const updateData = {};
+    
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (status !== undefined) updateData.status = status;
+
+    const project = await Project.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
+    ).populate('createdBy', 'name email');
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    res.json({
+      message: 'Project updated successfully',
+      project
+    });
+  } catch (error) {
+    console.error('Update project error:', error);
+    if (error.name === 'CastError') {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Delete project
+ */
+exports.deleteProject = async (req, res, next) => {
+  try {
+    const project = await Project.findByIdAndDelete(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    res.json({ 
+      message: 'Project deleted successfully',
+      project
+    });
+  } catch (error) {
+    console.error('Delete project error:', error);
+    if (error.name === 'CastError') {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    next(error);
+  }
+};
