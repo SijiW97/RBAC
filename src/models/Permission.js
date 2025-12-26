@@ -5,7 +5,8 @@ const permissionSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    enum: ['users:read', 'users:write', 'projects:read', 'projects:write', 'projects:delete']
+    enum: ['users:read', 'users:write', 'projects:read', 'projects:write', 'projects:delete'],
+    index: true
   },
   description: {
     type: String,

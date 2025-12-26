@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const Project = require('../models/Project');
 const authenticate = require('../middleware/auth');
 const { hasPermission } = require('../middleware/rbac');
+const { readLimiter, apiLimiter } = require('../middleware/ratelimit');
 
 const router = express.Router();
 
@@ -32,7 +33,7 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.get('/', authenticate, hasPermission('projects:read'), async (req, res) => {
+router.get('/', readLimiter, authenticate, hasPermission('projects:read'), async (req, res) => {
   try {
     const page = Number(req.query.page) || 1;
     const limit = Math.min(Number(req.query.limit) || 10, 50);
@@ -78,7 +79,7 @@ router.get('/', authenticate, hasPermission('projects:read'), async (req, res) =
  *       404:
  *         description: Project not found
  */
-router.get('/:id', authenticate, hasPermission('projects:read'), async (req, res) => {
+router.get('/:id', apiLimiter, hasPermission('projects:read'), async (req, res) => {
   try {
     const project = await Project.findById(req.params.id)
       .populate('createdBy', 'name email');
@@ -265,7 +266,7 @@ router.put('/:id',
  *       404:
  *         description: Project not found
  */
-router.delete('/:id', authenticate, hasPermission('projects:delete'), async (req, res) => {
+router.delete('/:id', apiLimiter,authenticate, hasPermission('projects:delete'), async (req, res) => {
   try {
     const project = await Project.findByIdAndDelete(req.params.id);
 

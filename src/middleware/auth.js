@@ -14,12 +14,10 @@ const authenticate = async (req, res, next) => {
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Support both 'userId' and 'sub' (JWT standard) fields
-    const userId = decoded.userId || decoded.sub;
+    const userId = decoded.userId;
 
     if (!userId) {
-      console.error('Token missing userId/sub field:', decoded);
+      console.error('Token missing userId field:', decoded);
       return res.status(401).json({ message: 'Invalid token format' });
     }
 

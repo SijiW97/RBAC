@@ -25,8 +25,7 @@ exports.login = async (req, res, next) => {
 
     const token = jwt.sign(
       {
-        sub: user._id.toString(),
-        userId: user._id.toString(), // Also include userId for backward compatibility
+        userId: user._id.toString(),
         roles,
         permissions
       },

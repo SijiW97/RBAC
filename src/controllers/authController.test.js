@@ -167,7 +167,6 @@ describe('AuthController - login', () => {
             expect(mockUser.comparePassword).toHaveBeenCalledWith('password123');
             expect(jwt.sign).toHaveBeenCalledWith(
                 {
-                    sub: '507f1f77bcf86cd799439011',
                     userId: '507f1f77bcf86cd799439011',
                     roles: ['admin'],
                     permissions: ['users:read', 'users:write']
@@ -186,7 +185,7 @@ describe('AuthController - login', () => {
             });
         });
 
-        test('should include both sub and userId in token', async () => {
+        test('should include userId in token', async () => {
             validationResult.mockReturnValue({ isEmpty: () => true });
 
             const mockUser = {
@@ -211,7 +210,6 @@ describe('AuthController - login', () => {
             await login(req, res, next);
 
             const tokenPayload = jwt.sign.mock.calls[0][0];
-            expect(tokenPayload).toHaveProperty('sub', '507f1f77bcf86cd799439011');
             expect(tokenPayload).toHaveProperty('userId', '507f1f77bcf86cd799439011');
         });
 
@@ -323,8 +321,6 @@ describe('AuthController - login', () => {
             await login(req, res, next);
 
             const tokenPayload = jwt.sign.mock.calls[0][0];
-
-            expect(tokenPayload).toHaveProperty('sub');
             expect(tokenPayload).toHaveProperty('userId');
             expect(tokenPayload).toHaveProperty('roles');
             expect(tokenPayload).toHaveProperty('permissions');
@@ -357,9 +353,7 @@ describe('AuthController - login', () => {
             await login(req, res, next);
 
             const tokenPayload = jwt.sign.mock.calls[0][0];
-            expect(typeof tokenPayload.sub).toBe('string');
             expect(typeof tokenPayload.userId).toBe('string');
-            expect(tokenPayload.sub).toBe('507f1f77bcf86cd799439011');
             expect(tokenPayload.userId).toBe('507f1f77bcf86cd799439011');
         });
 

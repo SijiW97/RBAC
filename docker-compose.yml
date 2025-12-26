@@ -28,7 +28,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - .env
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/rbac_db
+      - JWT_SECRET=${JWT_SECRET:-RBAC-SECRET-KEY}
     depends_on:
       mongodb:
         condition: service_healthy

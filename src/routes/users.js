@@ -26,8 +26,14 @@ const router = express.Router();
 router.get('/', authenticate, hasPermission('users:read'), async (req, res) => {
   try {
     const users = await User.find()
-      .populate('roles')
-      .select('-password');
+        .populate({
+          path: 'roles',
+          populate: {
+            path: 'permissions',
+            select: 'name'
+          }
+        })
+        .select('-password');
     
     res.json({ users, count: users.length });
   } catch (error) {

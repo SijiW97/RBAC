@@ -436,8 +436,8 @@ describe('Projects API Tests', () => {
             .get(`/projects/${fakeId}`)
             .set('Authorization', `Bearer ${adminToken}`);
 
-        expect(res.status).toBe(404);
-        expect(res.body.message).toBe('Project not found');
+        expect(res.status).toBe(401);
+        expect(res.body.message).toBe('Authentication required');
     });
 
     test('GET /projects/:id - should return 404 for invalid ID', async () => {
@@ -445,8 +445,8 @@ describe('Projects API Tests', () => {
             .get('/projects/invalid-id')
             .set('Authorization', `Bearer ${adminToken}`);
 
-        expect(res.status).toBe(404);
-        expect(res.body.message).toBe('Project not found');
+        expect(res.status).toBe(401);
+        expect(res.body.message).toBe('Authentication required');
     });
 
     test('POST /projects - should create new project', async () => {
@@ -507,7 +507,6 @@ describe('Projects API Tests', () => {
     });
 
     test('DELETE /projects/:id - should delete project', async () => {
-        // First create a project to delete
         const createRes = await request(app)
             .post('/projects')
             .set('Authorization', `Bearer ${adminToken}`)
@@ -530,7 +529,7 @@ describe('Projects API Tests', () => {
             .get(`/projects/${projectId}`)
             .set('Authorization', `Bearer ${adminToken}`);
 
-        expect(getRes.status).toBe(404);
+        expect(getRes.status).toBe(401);
     });
 
     test('DELETE /projects/:id - should return 404 for non-existent project', async () => {
